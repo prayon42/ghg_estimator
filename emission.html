@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Methane Emission Estimator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        input[type="number"], input[type="text"] {
+            margin: 5px;
+        }
+        .result {
+            margin-top: 20px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h2>Methane Emission Estimator</h2>
+    <div>
+        <label>Total Population: <input type="number" id="totalPopulation" placeholder="Enter population"></label>
+    </div>
+
+    <h3>Population Percentage by Containment Type</h3>
+    <div>
+        <label>Fully Lined Tank (%): <input type="number" id="fullyLinedTank" placeholder="e.g., 10"></label><br>
+        <label>Lined Tank and Open Bottom (%): <input type="number" id="linedTankOpenBottom" placeholder="e.g., 20"></label><br>
+        <label>Single Pit (%): <input type="number" id="singlePit" placeholder="e.g., 25"></label><br>
+        <label>Unimproved Pits (%): <input type="number" id="unimprovedPits" placeholder="e.g., 15"></label><br>
+        <label>Septic Tank (%): <input type="number" id="septicTank" placeholder="e.g., 20"></label><br>
+        <label>Twin Pits (%): <input type="number" id="twinPits" placeholder="e.g., 10"></label><br>
+    </div>
+
+    <button onclick="calculateEmissions()">Calculate Emissions</button>
+
+    <div class="result">
+        <h3>Results</h3>
+        <div id="results"></div>
+        <canvas id="emissionChart" width="400" height="400"></canvas>
+    </div>
+
+    <script>
+        function calculateEmissions() {
+            const totalPopulation = parseFloat(document.getElementById('totalPopulation').value);
+            const containmentPercentages = {
+                "Fully Lined Tank": parseFloat(document.getElementById('fullyLinedTank').value) / 100,
+                "Lined Tank and Open Bottom": parseFloat(document.getElementById('linedTankOpenBottom').value) / 100,
+                "Single Pit": parseFloat(document.getElementById('singlePit').value) / 100,
+                "Unimproved Pits": parseFloat(document.getElementById('unimprovedPits').value) / 100,
+                "Septic Tank": parseFloat(document.getElementById('septicTank').value) / 100,
+                "Twin Pits": parseFloat(document.getElementById('twinPits').value) / 100
+            };
+
+            const MCF_values = {
+                "Fully Lined Tank": 0.3,
+                "Lined Tank and Open Bottom": 0.7,
+                "Single Pit": 0.6,
+                "Unimproved Pits": 0.6,
+                "Septic Tank": 0.35,
+                "Twin Pits": 0.6
+            };
+
+            const BOD = 40;
+            const Bo = 60;
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = "";
+
+            let totalEmissions = 0;
+            const emissionsData = [];
+
+            for (const [containment, percentage] of Object.entries(containmentPercentages)) {
+                const MCF = MCF_values[containment];
+                const emission = totalPopulation * percentage * MCF * BOD * Bo;
+                totalEmissions += emission;
+
+                resultsDiv.innerHTML += `<p>${containment}: ${emission.toFixed(2)} kg of CH₄</p>`;
+                emissionsData.push(emission);
+            }
+
+            renderChart(Object.keys(containmentPercentages), emissionsData);
+        }
+
+        function renderChart(labels, data) {
+            const ctx = document.getElementById('emissionChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#FF9F40', '#4BC0C0', '#9966FF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw.toFixed(2)} kg of CH₄`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
